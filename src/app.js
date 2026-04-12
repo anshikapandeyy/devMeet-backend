@@ -3,24 +3,50 @@ const connectDB=require("./config/database")
 const app=express();
 const User=require('./models/user');
 app.use(express.json());
+const {validateSignUpData} =require('./utils/validation')
+const bcrypt=require('bcrypt');
 
 app.post("/signup",async (req,res) =>{
-    const user=new User(req.body);
+    
     try{
+        validateSignUpData(req);
+        const {firstName,lastName,emailId,password}=req.body;
+        const passwordHash=await bcrypt.hash(password,10);
+    const user=new User({
+        firstName,lastName,emailId,password:passwordHash,
+    });
         await user.save();
     res.send('user added');
     }
     catch(err){
-        res.status(400).send("error while saving user");
+        res.status(400).send("ERROR");
     }
     
 });
+app.post("/login",async (req,res)=>{
+    try{
+        const {emailId,password}=req.body;
+        const user=await User.findOne({emailId:emailId});
+        if(!user){
+            throw new Error("Not Present");
+        }
+        const isPasswordValid=await bcrypt.compare(password,user.password);
+        if(isPasswordValid){
+            res.send("Login Successfully");
+        }else{
+            throw new Error("Login Failed");
+        }
+
+    }catch(err){
+        res.status(404).send(ERROR);
+    }
+})
 app.get("/user",async (req,res)=>{
     const userEmail=req.body.emailId;
     try{
-        const users=await User.find({emialId:userEmail});
+        const users=await User.find({emaillId:userEmail});
         if(users.length===0){
-            res.status(404).send("not found user")
+            res.status(404).send("Not found")
         }
         else{
             res.send(users);
@@ -28,7 +54,7 @@ app.get("/user",async (req,res)=>{
         
     }
     catch(err){
-        res.status(404).send("not found");
+        res.status(404).send("Not found");
     }
     
 })
@@ -50,14 +76,30 @@ app.delete("/user",async (req,res)=>{
         res.status(404).send("not found");
     }
 });
-app.patch("/user",async (req,res)=>{
-    const userId=req.body.userId;
+app.patch("/user/:userId",async (req,res)=>{
+    const userId=req.params?.userId;
     const data=req.body;
+    
     try{
-        await User.findByIdAndUpdate({_id:userId},data);
+        const ALLOWED_UPDATES=[
+        "photoUrl","about","gender","age","skills"
+    ];
+    const isUpdateAllowed =Object.keys(data).every(k=> ALLOWED_UPDATES.includes(k));
+    if(!isUpdateAllowed){
+        throw new Error("Update not allowed");
+    }
+    if(data?.skills.length>10){
+        throw new Error("only ten skills allowed");
+    }
+        const user =await User.findByIdAndUpdate({_id:userId},data,{
+        returnDocument:"after",
+        runValidators:true,
+        });
+        console.log(user);
+        
         res.send("added");
     }catch(err){
-        res.status(404).send("something went wrong");
+        res.status(404).send("Update Failed"+err.message);
     }
 })
 connectDB().then(()=>{
@@ -66,5 +108,5 @@ connectDB().then(()=>{
     console.log("server is listening");
 });
 }).catch((err)=>{
-    console.error("error");
+    console.error("Error");
 })
