@@ -1,5 +1,6 @@
 const express=require('express');
 const userRouter=express.Router();
+const User=require("../models/user");
 const {userAuth}=require("../middlewares/auth");
 const ConnectionRequest=require("../models/connectionRequest");
 const USER_SAFE="firstName lastName photoUrl age gender about skills";
@@ -51,8 +52,16 @@ userRouter.get("/feed",userAuth,async (req,res)=>{
             $or:[
                 {fromUSerId:loggedInUser._id},{toUserId:loggedInUser._id},
             ],
+        }).select("fromUserId toUserId");
+        const hideUsersFromFeed = new Set();
+        connectionRequests.forEach(req=>{
+            hideUsersFromFeed.add(req.fromUserId.toString());
+            hideUsersFromFeed.add(req.toUserId.toString());
         });
-        res.send(connectionRequests);
+        const users=await User.find({
+            $and:[{_id: {$nin:Array.from(hideUsersFromFeed)}},{_id:{$ne:loggedInUser._id}},],
+        }).select(USER_SAFE);
+        res.send(users);
 
     }catch(err){
         res.status(404).json({message:err.message});
