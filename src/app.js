@@ -1,10 +1,12 @@
 const express =require('express');
 const connectDB=require("./config/database");
 const app=express();
+const cors=reuire("cors");
 const {validateSignUpData} =require('./utils/validation')
 const bcrypt=require('bcrypt');
 const User=require('./models/user');
 app.use(express.json());
+app.use(cors());
 const {authRouter} =require('./routes/auth');
 const {profileRouter} =require('./routes/profile');
 const {requestRouter} =require('./routes/requests');
