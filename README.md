@@ -1,7 +1,7 @@
 
 # DevMeet
 
-DevMeet is a developer networking platform inspired by Tinder, where developers can connect, match, and collaborate based on their skills, interests, and technology stack.
+DevMeet is a developer networking platform where developers can connect, match, and collaborate based on their skills, interests, and technology stack.
 
 ## 📌 Features
 
